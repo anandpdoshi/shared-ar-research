@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name='viewport' content='width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'>
+        <title>Shared AR</title>
+        <script src="/static/lib/three.js" charset="utf-8"></script>
+        <script src="/static/lib/ar.js" charset="utf-8"></script>
+        <script>THREEx.ArToolkitContext.baseURL = './data/'</script>
+        <style media="screen">
+            body {
+                margin: 0;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="ar-canvas"></canvas>
+        <script src="/static/main.js" charset="utf-8"></script>
+    </body>
+</html>
