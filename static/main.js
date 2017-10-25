@@ -1,3 +1,5 @@
+var markers_list = ['001.patt', '002.patt', '003.patt', '004.patt'];
+
 var sharedAR = {
     init_renderer: function(canvas_id) {
         // Init WebGL Renderer
@@ -87,13 +89,24 @@ var sharedAR = {
     },
 
     init_marker: function() {
-        this.marker_group = new THREE.Group;  // v/s new THREE.Group
-        this.scene.add(this.marker_group);
+        this.marker_groups = [];
+        var marker_group, patternUrl;
 
-        this.marker = new THREEx.ArMarkerControls(this.context, this.marker_group, {
+        for ( var i=0, j=markers_list.length; i < j; i++ ) {
+            patternUrl = '/data/' + markers_list[i];
+            this.new_marker(patternUrl);
+        }
+    },
+
+    new_marker: function(patternUrl) {
+        console.log('new_marker', patternUrl);
+        marker_group = new THREE.Group;  // v/s new THREE.Group
+        this.scene.add(marker_group);
+        this.marker_groups.push(marker_group);
+
+        new THREEx.ArMarkerControls(this.context, marker_group, {
             type: 'pattern',
-            // patternUrl: '/data/hiro.patt',
-            patternUrl: '/data/001.patt',
+            patternUrl: patternUrl,
 
             // as we control the camera, set changeMatrixMode: 'cameraTransformMatrix'
             // changeMatrixMode: 'cameraTransformMatrix'
@@ -102,48 +115,66 @@ var sharedAR = {
 
     init_smoothed_controls: function() {
         var me = this;
+        this.smoothed_controls = [];
 
+        console.log('init_smoothed_controls', markers_list);
+        for (var i=0, j=markers_list.length; i < j; i++) {
+            var smoothed_controls = this.new_smoothed_marker();
+            this.smoothed_controls.push(smoothed_controls);
+        }
+
+        this.on_render_functions.push(function() {
+            for (var i=0, j=markers_list.length; i < j; i++) {
+                me.smoothed_controls[i].update(me.marker_groups[i])
+            }
+            // me.smoothed_controls.update(me.marker_group);
+        });
+    },
+
+    new_smoothed_marker: function() {
+        console.log('new_smoothed_marker');
         // build a smoothedControl
         // NOTE I think this is to smoothly move the marker
-        this.smoothed_group = new THREE.Group();
-        this.scene.add(this.smoothed_group);
+        var smoothed_group = new THREE.Group();
+        this.scene.add(smoothed_group);
 
-        this.smoothed_controls = new THREEx.ArSmoothedControls(this.smoothed_group, {
+        var smoothed_controls = new THREEx.ArSmoothedControls(smoothed_group, {
             lerpPosition: 0.4,
             lerpQuaternion: 0.3,
             lerpScale: 1,
             // minVisibleDelay: 1,
     		// minUnvisibleDelay: 1
         });
-        this.on_render_functions.push(function() {
-            me.smoothed_controls.update(me.marker_group);
-        });
 
-        this.smoothed_controls.addEventListener('becameVisible', function(){
+        smoothed_controls.addEventListener('becameVisible', function(){
     		console.log('becameVisible event notified')
     	});
 
-    	this.smoothed_controls.addEventListener('becameUnVisible', function(){
+    	smoothed_controls.addEventListener('becameUnVisible', function(){
     		console.log('becameUnVisible event notified')
     	});
+
+        this.init_object_at_marker(smoothed_group);
+
+        return smoothed_controls;
     },
 
-    init_object_at_marker: function() {
+    init_object_at_marker: function(smoothed_group) {
         // instead of a new scene, we use the smoothed group to add objects to
         // this.marker_scene = new THREE.Scene();
         // this.marker_group.add(this.marker_scene);
 
-        this.ar_world_group = this.smoothed_group;
+        var ar_world_group = smoothed_group;
 
         var axis_helper_mesh = new THREE.AxisHelper();
-        this.ar_world_group.add(axis_helper_mesh);
+        ar_world_group.add(axis_helper_mesh);
 
         // add a torus knot
         var cube_mesh = this.get_cube_mesh();
-        this.ar_world_group.add(cube_mesh);
+        ar_world_group.add(cube_mesh);
 
         var torus_knot_mesh = this.get_torus_knot_mesh();
-        this.ar_world_group.add(torus_knot_mesh);
+        ar_world_group.add(torus_knot_mesh);
 
         this.on_render_functions.push(function(delta) {
             torus_knot_mesh.rotation.x += delta * Math.PI;
@@ -179,7 +210,7 @@ var sharedAR = {
         sharedAR.init_context();
         sharedAR.init_marker();
         sharedAR.init_smoothed_controls();
-        sharedAR.init_object_at_marker();
+        // sharedAR.init_object_at_marker();
 
         sharedAR.on_render_functions.push(function(){
     		sharedAR.renderer.render( sharedAR.scene, sharedAR.camera );
