@@ -1,4 +1,23 @@
-var markers_list = ['001.patt', '002.patt', '003.patt', '004.patt'];
+var markers = {
+    '001.patt': {
+        box_color: "#F98866",
+        knot_color: "#FF420E"
+    },
+    '002.patt': {
+        box_color: "#80BD9E",
+        knot_color: "#89DA59"
+    },
+    '003.patt': {
+        box_color: "#90AFC5",
+        knot_color: "#336B87"
+    },
+    '004.patt': {
+        box_color: "#2A3132",
+        knot_color: "#763626"
+    }
+};
+
+var markers_list = Object.keys(markers);
 
 var sharedAR = {
     init_renderer: function(canvas_id) {
@@ -31,6 +50,8 @@ var sharedAR = {
 
     init_camera: function() {
         this.camera = new THREE.Camera();
+        // this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth, window.innerHeight, 1, 1000 );
+        // this.camera = new THREE.PerspectiveCamera(42, this.renderer.domElement.width / this.renderer.domElement.height, 0.01, 100);
         this.scene.add(this.camera);
     },
 
@@ -51,11 +72,13 @@ var sharedAR = {
     },
 
     on_resize: function() {
+        // canvas size and pixel ratio
         this.source.onResizeElement();
         this.source.copyElementSizeTo(this.renderer.domElement);
         if (this.context.arController != null) {
             this.source.copyElementSizeTo(this.context.arController.canvas);
         }
+
     },
 
     init_context: function() {
@@ -99,7 +122,7 @@ var sharedAR = {
     },
 
     new_marker: function(patternUrl) {
-        console.log('new_marker', patternUrl);
+        // console.log('new_marker', patternUrl);
         marker_group = new THREE.Group;  // v/s new THREE.Group
         this.scene.add(marker_group);
         this.marker_groups.push(marker_group);
@@ -119,7 +142,7 @@ var sharedAR = {
 
         console.log('init_smoothed_controls', markers_list);
         for (var i=0, j=markers_list.length; i < j; i++) {
-            var smoothed_controls = this.new_smoothed_marker();
+            var smoothed_controls = this.new_smoothed_marker(markers_list[i]);
             this.smoothed_controls.push(smoothed_controls);
         }
 
@@ -131,8 +154,8 @@ var sharedAR = {
         });
     },
 
-    new_smoothed_marker: function() {
-        console.log('new_smoothed_marker');
+    new_smoothed_marker: function(marker_name) {
+        // console.log('new_smoothed_marker');
         // build a smoothedControl
         // NOTE I think this is to smoothly move the marker
         var smoothed_group = new THREE.Group();
@@ -154,12 +177,12 @@ var sharedAR = {
     		console.log('becameUnVisible event notified')
     	});
 
-        this.init_object_at_marker(smoothed_group);
+        this.init_object_at_marker(smoothed_group, marker_name);
 
         return smoothed_controls;
     },
 
-    init_object_at_marker: function(smoothed_group) {
+    init_object_at_marker: function(smoothed_group, marker_name) {
         // instead of a new scene, we use the smoothed group to add objects to
         // this.marker_scene = new THREE.Scene();
         // this.marker_group.add(this.marker_scene);
@@ -170,10 +193,10 @@ var sharedAR = {
         ar_world_group.add(axis_helper_mesh);
 
         // add a torus knot
-        var cube_mesh = this.get_cube_mesh();
+        var cube_mesh = this.get_cube_mesh(marker_name);
         ar_world_group.add(cube_mesh);
 
-        var torus_knot_mesh = this.get_torus_knot_mesh();
+        var torus_knot_mesh = this.get_torus_knot_mesh(marker_name);
         ar_world_group.add(torus_knot_mesh);
 
         this.on_render_functions.push(function(delta) {
@@ -181,9 +204,16 @@ var sharedAR = {
         });
     },
 
-    get_cube_mesh: function() {
-        var geometry = new THREE.CubeGeometry(1, 1, 1);
-        var material = new THREE.MeshNormalMaterial({
+    get_cube_mesh: function(marker_name) {
+        var color = markers[marker_name]['box_color'];
+        var geometry = new THREE.BoxGeometry(1, 1, 1);
+        // var material = new THREE.MeshNormalMaterial({
+        //     transparent: true,
+        //     opacity: 0.5,
+        //     side: THREE.DoubleSide
+        // });
+        var material = new THREE.MeshLambertMaterial({
+            color: new THREE.Color(color || 0x000033),
             transparent: true,
             opacity: 0.5,
             side: THREE.DoubleSide
@@ -193,9 +223,13 @@ var sharedAR = {
         return mesh;
     },
 
-    get_torus_knot_mesh: function() {
+    get_torus_knot_mesh: function(marker_name) {
+        var color = markers[marker_name]['knot_color'];
         var geometry = new THREE.TorusKnotGeometry(0.3, 0.1, 64, 16);
-        var material = new THREE.MeshNormalMaterial();
+        // var material = new THREE.MeshNormalMaterial();
+        var material = new THREE.MeshLambertMaterial({
+            color: new THREE.Color(color || 0x770000)
+        });
         var mesh = new THREE.Mesh( geometry, material );
         mesh.position.y = 0.5;
         return mesh;
