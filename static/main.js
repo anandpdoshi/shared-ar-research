@@ -139,11 +139,11 @@ var sharedAR = {
     init_smoothed_controls: function() {
         var me = this;
         this.smoothed_controls = [];
+        this.smoothed_groups = [];
 
         console.log('init_smoothed_controls', markers_list);
         for (var i=0, j=markers_list.length; i < j; i++) {
-            var smoothed_controls = this.new_smoothed_marker(markers_list[i]);
-            this.smoothed_controls.push(smoothed_controls);
+            this.new_smoothed_marker();
         }
 
         this.on_render_functions.push(function() {
@@ -154,7 +154,7 @@ var sharedAR = {
         });
     },
 
-    new_smoothed_marker: function(marker_name) {
+    new_smoothed_marker: function() {
         // console.log('new_smoothed_marker');
         // build a smoothedControl
         // NOTE I think this is to smoothly move the marker
@@ -177,35 +177,37 @@ var sharedAR = {
     		console.log('becameUnVisible event notified')
     	});
 
-        this.init_object_at_marker(smoothed_group, marker_name);
-
-        return smoothed_controls;
+        this.smoothed_groups.push(smoothed_group);
+        this.smoothed_controls.push(smoothed_controls);
+        // return smoothed_controls;
     },
 
-    init_object_at_marker: function(smoothed_group, marker_name) {
+    init_object: function(obj) {
         // instead of a new scene, we use the smoothed group to add objects to
         // this.marker_scene = new THREE.Scene();
         // this.marker_group.add(this.marker_scene);
 
-        var ar_world_group = smoothed_group;
+        var ar_obj_group = new THREE.Group();
 
         var axis_helper_mesh = new THREE.AxisHelper();
-        ar_world_group.add(axis_helper_mesh);
+        ar_obj_group.add(axis_helper_mesh);
 
         // add a torus knot
-        var cube_mesh = this.get_cube_mesh(marker_name);
-        ar_world_group.add(cube_mesh);
+        var cube_mesh = this.get_cube_mesh(obj);
+        ar_obj_group.add(cube_mesh);
 
-        var torus_knot_mesh = this.get_torus_knot_mesh(marker_name);
-        ar_world_group.add(torus_knot_mesh);
+        var torus_knot_mesh = this.get_torus_knot_mesh(obj);
+        ar_obj_group.add(torus_knot_mesh);
 
         this.on_render_functions.push(function(delta) {
             torus_knot_mesh.rotation.x += delta * Math.PI;
         });
+
+        return ar_obj_group;
     },
 
-    get_cube_mesh: function(marker_name) {
-        var color = markers[marker_name]['box_color'];
+    get_cube_mesh: function(obj) {
+        var color = obj['box_color'];
         var geometry = new THREE.BoxGeometry(1, 1, 1);
         // var material = new THREE.MeshNormalMaterial({
         //     transparent: true,
@@ -223,8 +225,8 @@ var sharedAR = {
         return mesh;
     },
 
-    get_torus_knot_mesh: function(marker_name) {
-        var color = markers[marker_name]['knot_color'];
+    get_torus_knot_mesh: function(obj) {
+        var color = obj['knot_color'];
         var geometry = new THREE.TorusKnotGeometry(0.3, 0.1, 64, 16);
         // var material = new THREE.MeshNormalMaterial();
         var material = new THREE.MeshLambertMaterial({
@@ -233,6 +235,22 @@ var sharedAR = {
         var mesh = new THREE.Mesh( geometry, material );
         mesh.position.y = 0.5;
         return mesh;
+    },
+
+    assign_objects: function(now) {
+        this.objects = shuffle(this.objects);
+        for ( var i=0, j=this.smoothed_groups.length; i < j; i++ ) {
+            var smoothed_group = this.smoothed_groups[i];
+            var obj = this.objects[i];
+            var prev_obj = this.group_object_map[smoothed_group.uuid];
+            if (prev_obj) {
+                smoothed_group.remove(prev_obj);
+            }
+            smoothed_group.add(obj);
+            this.group_object_map[smoothed_group.uuid] = obj;
+        }
+
+        this.previous_change = now;
     },
 
     render: function() {
@@ -244,7 +262,25 @@ var sharedAR = {
         sharedAR.init_context();
         sharedAR.init_marker();
         sharedAR.init_smoothed_controls();
-        // sharedAR.init_object_at_marker();
+
+        sharedAR.objects = [];
+        var object_list = Object.values(markers);
+        for (var i=0, j=object_list.length; i < j; i++) {
+            sharedAR.objects.push(sharedAR.init_object(object_list[i]));
+        }
+
+        sharedAR.group_object_map = {};
+        // sharedAR.object_group_map = {};
+
+        sharedAR.on_render_functions.push(function(delta, now) {
+            if ( !sharedAR.previous_change ) {
+                sharedAR.previous_change = now;
+                sharedAR.assign_objects(now);
+
+            } else if ( now - sharedAR.previous_change > 5 ) {
+                sharedAR.assign_objects(now);
+            }
+        });
 
         sharedAR.on_render_functions.push(function(){
     		sharedAR.renderer.render( sharedAR.scene, sharedAR.camera );
@@ -272,3 +308,22 @@ var sharedAR = {
 };
 
 sharedAR.render();
+
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
