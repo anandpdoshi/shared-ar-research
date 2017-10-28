@@ -12,6 +12,8 @@ var markers = {
         knot_color: "#336B87"
     },
     '004.patt': {
+        // model: 'Red-Lamborghini',
+        image: 'hokusai-great-wave.jpg',
         box_color: "#2A3132",
         knot_color: "#763626"
     }
@@ -170,11 +172,12 @@ var sharedAR = {
         });
 
         smoothed_controls.addEventListener('becameVisible', function(){
-    		console.log('becameVisible event notified')
+    		console.log('becameVisible event notified');
+            // console.log(this);
     	});
 
     	smoothed_controls.addEventListener('becameUnVisible', function(){
-    		console.log('becameUnVisible event notified')
+    		console.log('becameUnVisible event notified');
     	});
 
         this.smoothed_groups.push(smoothed_group);
@@ -189,19 +192,53 @@ var sharedAR = {
 
         var ar_obj_group = new THREE.Group();
 
-        var axis_helper_mesh = new THREE.AxisHelper();
-        ar_obj_group.add(axis_helper_mesh);
+        if (obj.model) {
+            var loader = new THREE.ObjectLoader();
+            loader.load('/static/models/' + obj.model + '/model.json', function ( obj ) {
+                 ar_obj_group.add( obj );
+            });
+            // var loader = new THREE.JSONLoader();
+            // loader.load( , function ( geometry, materials ) {
+            //     var mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+            //     ar_obj_group.add( mesh );
+            // });
+        } else if (obj.image) {
+            var geometry = new THREE.PlaneGeometry( 0.8, 0.8 ).rotateX( -Math.PI/2 );
+            var texture = new THREE.TextureLoader().load('/static/images/' + obj.image, function(t) {
+                var img = t.image;
+                var min_val = Math.min(img.width, img.height);
+                var width = 6 * img.width / min_val;
+                var height = 6 * img.height / min_val;
+                // console.log(img, width, height);
+                mesh.scale.set(width, 0, height);
+                // console.log(t.image.width);
+            });
+            console.log(texture);
+    		var material = new THREE.MeshBasicMaterial({
+    			side: THREE.DoubleSide,
+    			map: texture,
+    			alphaTest: 0.9,
+    		});
+    		var mesh = new THREE.Mesh( geometry, material );
 
-        // add a torus knot
-        var cube_mesh = this.get_cube_mesh(obj);
-        ar_obj_group.add(cube_mesh);
+            // mesh.position.y = -screenDepth;
+            ar_obj_group.add(mesh);
 
-        var torus_knot_mesh = this.get_torus_knot_mesh(obj);
-        ar_obj_group.add(torus_knot_mesh);
+        } else {
+            var axis_helper_mesh = new THREE.AxisHelper();
+            ar_obj_group.add(axis_helper_mesh);
 
-        this.on_render_functions.push(function(delta) {
-            torus_knot_mesh.rotation.x += delta * Math.PI;
-        });
+            // add a torus knot
+            var cube_mesh = this.get_cube_mesh(obj);
+            ar_obj_group.add(cube_mesh);
+
+            var torus_knot_mesh = this.get_torus_knot_mesh(obj);
+            ar_obj_group.add(torus_knot_mesh);
+
+            this.on_render_functions.push(function(delta) {
+                torus_knot_mesh.rotation.x += delta * Math.PI;
+            });
+        }
 
         return ar_obj_group;
     },
@@ -238,7 +275,7 @@ var sharedAR = {
     },
 
     assign_objects: function(now) {
-        this.objects = shuffle(this.objects);
+        // this.objects = shuffle(this.objects);
         for ( var i=0, j=this.smoothed_groups.length; i < j; i++ ) {
             var smoothed_group = this.smoothed_groups[i];
             var obj = this.objects[i];
@@ -248,6 +285,10 @@ var sharedAR = {
             }
             smoothed_group.add(obj);
             this.group_object_map[smoothed_group.uuid] = obj;
+
+            if (smoothed_group.visible) {
+                console.log(i, smoothed_group.position, smoothed_group.rotation);
+            }
         }
 
         this.previous_change = now;
