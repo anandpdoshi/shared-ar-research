@@ -1,0 +1,145 @@
+html {
+    -webkit-tap-highlight-color:  rgba(255, 255, 255, 0);
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: sans-serif;
+}
+
+#interface {
+    z-index: 1;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+}
+
+.icon-div {
+    transform: scale(0.5);
+    cursor: pointer;
+}
+
+.absolute {
+    position: absolute;
+}
+
+#layers {
+    right: 0;
+    bottom: 0;
+}
+
+#settings {
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    position: absolute;
+    text-align: center;
+    width: 100%;
+}
+
+.icon-div .fill-semi-white {
+    fill: rgba(255, 255, 255, 0.5) !important;
+}
+
+.icon-div .fill-light-grey {
+    fill: rgba(230, 230, 230, 1) !important;
+}
+
+.icon-div .fill-white {
+    fill: #fff !important;
+}
+
+/*.icon-div:focus .part,*/
+.icon-div:active .part,
+/*.icon-div:hover .part,*/
+.icon-div.active .part
+{
+    fill: rgba(255, 255, 255, 1) !important;
+}
+
+.icon-div .stroke-black {
+    stroke: #000 !important;
+}
+
+.settings-menu {
+    vertical-align: middle;
+    background-color: #fff;
+    border-radius: 60px;
+    width: auto;
+    padding: 30px;
+    padding-top: 20px;
+    display: inline-block;
+    visibility: visible;
+}
+
+.hidden {
+    display: none;
+    visibility: hidden;
+}
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+  margin-left: 15px;
+  margin-right: 15px;
+  margin-bottom: -12px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {display:none;}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  /*border: 5px solid #fff;*/
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

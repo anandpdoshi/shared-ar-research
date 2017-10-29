@@ -22,7 +22,11 @@ var markers = {
 var markers_list = Object.keys(markers);
 
 var sharedAR = {
+    visible_objects: 0,
+
     init_renderer: function(canvas_id) {
+        var me = this;
+
         // Init WebGL Renderer
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById(canvas_id),
@@ -30,7 +34,7 @@ var sharedAR = {
             alpha: true
         });
 
-        this.renderer.setClearColor(new THREE.Color('lightgrey'), 0);
+        // this.renderer.setClearColor(new THREE.Color('lightgrey'), 0);
 
         // canvas size and pixel ratio
         this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -53,7 +57,7 @@ var sharedAR = {
     init_camera: function() {
         this.camera = new THREE.Camera();
         // this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth, window.innerHeight, 1, 1000 );
-        // this.camera = new THREE.PerspectiveCamera(42, this.renderer.domElement.width / this.renderer.domElement.height, 0.01, 100);
+        // this.camera = new THREE.PerspectiveCamera(70, this.renderer.domElement.width / this.renderer.domElement.height, 0.01, 10000);
         this.scene.add(this.camera);
     },
 
@@ -69,11 +73,11 @@ var sharedAR = {
         });
 
         window.addEventListener('resize', function() {
-            me.on_resize();
+            me.on_resize(true);
         });
     },
 
-    on_resize: function() {
+    on_resize: function(resize) {
         // canvas size and pixel ratio
         this.source.onResizeElement();
         this.source.copyElementSizeTo(this.renderer.domElement);
@@ -81,6 +85,9 @@ var sharedAR = {
             this.source.copyElementSizeTo(this.context.arController.canvas);
         }
 
+        if ( resize ) {
+            this.renderer.setSize( window.innerWidth, window.innerHeight );
+        }
     },
 
     init_context: function() {
@@ -88,14 +95,15 @@ var sharedAR = {
 
         this.context = new THREEx.ArToolkitContext({
             cameraParametersUrl: '/data/camera_para.dat',
-            detectionMode: 'mono',
+            // detectionMode: 'mono_and_matrix',
+            detectionMode: 'color_and_matrix',
 
             // resolution of at which we detect pose in the source image
         	// canvasWidth: 640,
         	// canvasHeight: 480,
-            // maxDetectionRate: 60,
+            maxDetectionRate: 30,
 
-            // imageSmoothingEnabled : true,
+            imageSmoothingEnabled : true,
         });
 
         this.context.init(function onCompleted() {
@@ -160,6 +168,8 @@ var sharedAR = {
         // console.log('new_smoothed_marker');
         // build a smoothedControl
         // NOTE I think this is to smoothly move the marker
+        var me = this;
+
         var smoothed_group = new THREE.Group();
         this.scene.add(smoothed_group);
 
@@ -173,11 +183,27 @@ var sharedAR = {
 
         smoothed_controls.addEventListener('becameVisible', function(){
     		console.log('becameVisible event notified');
-            // console.log(this);
+            console.log('visible', this.object3d.children);
+            me.visible_objects += 1;
+
+            // TODO only show if 1 object in range
+            if (me.visible_objects) {
+                document.querySelector( '#settings' ).classList.remove('hidden');
+            }
     	});
 
     	smoothed_controls.addEventListener('becameUnVisible', function(){
     		console.log('becameUnVisible event notified');
+
+            if (me.visible_objects > 0) {
+                me.visible_objects -= 1;
+            }
+
+            console.log(this);
+
+            if (me.visible_objects == 0) {
+                document.querySelector( '#settings' ).classList.add('hidden');
+            }
     	});
 
         this.smoothed_groups.push(smoothed_group);
@@ -207,13 +233,13 @@ var sharedAR = {
             var texture = new THREE.TextureLoader().load('/static/images/' + obj.image, function(t) {
                 var img = t.image;
                 var min_val = Math.min(img.width, img.height);
-                var width = 6 * img.width / min_val;
-                var height = 6 * img.height / min_val;
+                var width = 5 * img.width / min_val;
+                var height = 5 * img.height / min_val;
                 // console.log(img, width, height);
-                mesh.scale.set(width, 0, height);
+                mesh.scale.set(width, 1, height);
                 // console.log(t.image.width);
             });
-            console.log(texture);
+            // console.log(texture);
     		var material = new THREE.MeshBasicMaterial({
     			side: THREE.DoubleSide,
     			map: texture,
@@ -286,9 +312,9 @@ var sharedAR = {
             smoothed_group.add(obj);
             this.group_object_map[smoothed_group.uuid] = obj;
 
-            if (smoothed_group.visible) {
-                console.log(i, smoothed_group.position, smoothed_group.rotation);
-            }
+            // if (smoothed_group.visible) {
+            //     console.log(i, smoothed_group.position, smoothed_group.rotation);
+            // }
         }
 
         this.previous_change = now;
@@ -348,8 +374,6 @@ var sharedAR = {
     },
 };
 
-sharedAR.render();
-
 function shuffle(array) {
   var currentIndex = array.length, temporaryValue, randomIndex;
 
@@ -367,4 +391,23 @@ function shuffle(array) {
   }
 
   return array;
-}
+};
+
+document.addEventListener( "DOMContentLoaded", function( event ) {
+    sharedAR.render();
+
+    document.getElementById( 'layers' ).addEventListener( 'click', function( event ) {
+        console.log(event);
+    } );
+
+    document.querySelector( '#settings .icon-div' )
+            .addEventListener( 'click', function( event ) {
+                this.classList.toggle('active');
+                document.querySelector( '#settings .settings-menu' ).classList.toggle('hidden');
+            } );
+
+    document.querySelector( '#settings .switch input' )
+            .addEventListener( 'change', function( event ) {
+                console.log(this.checked);
+            } );
+} );
