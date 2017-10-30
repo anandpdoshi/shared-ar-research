@@ -1,1 +1,5 @@
 .DS_Store
+uploads/
+venv/
+data/database.db
+__pycache__/

@@ -32,7 +32,7 @@ body {
     bottom: 0;
 }
 
-#settings {
+.settings {
     left: 50%;
     bottom: 0;
     transform: translateX(-50%);
@@ -79,6 +79,7 @@ body {
 .hidden {
     display: none;
     visibility: hidden;
+    pointer-events: none;
 }
 
 /* The switch - the box around the slider */
@@ -142,4 +143,22 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+
+.settings-menu .marker-name {
+    font-weight: bold;
+}
+
+.settings-menu form {
+    margin-top: 15px;
+}
+
+.settings-menu input[type="file"] {
+    margin: 15px 0px;
+}
+
+.settings-menu .switch-container {
+    margin-top: 15px;
+    margin-bottom: 35px;
 }
