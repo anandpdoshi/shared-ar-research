@@ -209,11 +209,12 @@ var sharedAR = {
             //     document.querySelector( '#settings' ).classList.remove('hidden');
             // }
 
+            z = 0;
             if (smoothed_controls.marker_name
                     && Object.keys(data[smoothed_controls.marker_name] || {}).length
                     && !smoothed_controls.smoothed_group.children.length) {
-                var layers = Object.keys(data[smoothed_controls.marker_name]);
-                $.each(layers, function(l, layer_name) {
+
+                function load_layer_objects(layer_name) {
                     var obj_list = data[smoothed_controls.marker_name][layer_name];
                     for (var i=0, j=obj_list.length; i < j; i++) {
                         var obj_data = obj_list[i];
@@ -224,9 +225,23 @@ var sharedAR = {
                             obj_group.obj_id = id;
                             me.loaded_objects[id] = obj_group;
                         }
+
+                        var obj_group = me.loaded_objects[id];
+                        obj_group.position.y = z;
+                        obj_group.position.z = z;
+                        obj_group.position.x = z;
+                        smoothed_controls.smoothed_group.add(obj_group);
+                        z -= 0.25;
                     }
-                    smoothed_controls.smoothed_group.add(me.loaded_objects[id]);
-                });
+                }
+
+                if (data[smoothed_controls.marker_name]['Public']) {
+                    load_layer_objects('Public');
+                }
+
+                if (data[smoothed_controls.marker_name]['Private']) {
+                    load_layer_objects('Private');
+                }
             }
 
             console.log(this.marker_name);

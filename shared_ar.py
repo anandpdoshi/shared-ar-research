@@ -173,4 +173,4 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
-    app.run(use_reloader=1, threaded=True)
+    app.run(host='127.0.0.1', port=8000, use_reloader=1, threaded=True)
