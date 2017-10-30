@@ -5,6 +5,7 @@ import string
 import random
 import os
 import sqlite3
+import json
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
@@ -100,7 +101,7 @@ def index():
 def load_data():
     results = query_db("""select * from Uploads
         where UserId=? or Layer='Public'
-        order by Marker asc, Timestamp asc""", (g.username,))
+        order by Marker asc, Timestamp desc""", (g.username,))
 
     data = {}
     for r in results:
@@ -135,7 +136,7 @@ def upload_file():
     # return ''
 
     if file.filename == '':
-        resp_string =  'no filename'
+        resp =  'no filename'
 
     elif file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -146,27 +147,28 @@ def upload_file():
         try:
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         except:
-            resp_string = "error in saving file"
+            resp = "error in saving file"
             print('except block!')
             raise
         else:
-            insert(
-                "Uploads",
-                {
-                    "UserId": g.username,
-                    "Content": filename,
-                    "Marker": marker,
-                    "Layer": layer or "Private"
-                },
-                commit=True
-            )
+            args = {
+                "UserId": g.username,
+                "Content": filename,
+                "Marker": marker,
+                "Layer": layer or "Private"
+            }
+            insert("Uploads", args, commit=True)
 
-            resp_string = url_for('uploaded_file', filename=filename)
+            resp_dict = {
+                "uploaded": url_for('uploaded_file', filename=filename)
+            }
+            resp_dict.update(args)
+            resp = json.dumps(resp_dict)
 
     else:
-        resp_string = 'nothing to upload'
+        resp = 'nothing to upload'
 
-    return resp_string
+    return resp
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

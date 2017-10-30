@@ -85,10 +85,6 @@ var sharedAR = {
         if (this.context.arController != null) {
             this.source.copyElementSizeTo(this.context.arController.canvas);
         }
-
-        if ( resize ) {
-            this.renderer.setSize( window.innerWidth, window.innerHeight );
-        }
     },
 
     init_context: function() {
@@ -96,8 +92,8 @@ var sharedAR = {
 
         this.context = new THREEx.ArToolkitContext({
             cameraParametersUrl: '/static/data/camera_para.dat',
-            // detectionMode: 'mono_and_matrix',
-            detectionMode: 'color_and_matrix',
+            detectionMode: 'mono_and_matrix',
+            // detectionMode: 'color_and_matrix',
 
             // resolution of at which we detect pose in the source image
         	// canvasWidth: 640,
@@ -212,11 +208,12 @@ var sharedAR = {
             z = 0;
             if (smoothed_controls.marker_name
                     && Object.keys(data[smoothed_controls.marker_name] || {}).length
-                    && !smoothed_controls.smoothed_group.children.length) {
+                    && !smoothed_controls.smoothed_group.children.length
+                ) {
 
                 function load_layer_objects(layer_name) {
                     var obj_list = data[smoothed_controls.marker_name][layer_name];
-                    for (var i=0, j=obj_list.length; i < j; i++) {
+                    for (var i=0, j=1 /*obj_list.length*/ ; i < j; i++) {
                         var obj_data = obj_list[i];
                         console.log(obj_data);
                         var id = obj_data['Content'];
@@ -227,21 +224,21 @@ var sharedAR = {
                         }
 
                         var obj_group = me.loaded_objects[id];
+                        obj_group.position.z = -1 * z;
                         obj_group.position.y = z;
-                        obj_group.position.z = z;
-                        obj_group.position.x = z;
+                        // obj_group.position.x = z;
+                        // obj_group.rotation.y = z;
                         smoothed_controls.smoothed_group.add(obj_group);
-                        z -= 0.25;
+                        z -= 0.5;
                     }
-                }
-
-                if (data[smoothed_controls.marker_name]['Public']) {
-                    load_layer_objects('Public');
                 }
 
                 if (data[smoothed_controls.marker_name]['Private']) {
                     load_layer_objects('Private');
+                } else if (data[smoothed_controls.marker_name]['Public']) {
+                    load_layer_objects('Public');
                 }
+
             }
 
             console.log(this.marker_name);
@@ -516,9 +513,9 @@ document.addEventListener( "DOMContentLoaded", function( event ) {
         // console.log(data, data.forEach(function() { console.log(arguments); }));
 
 
-        $form.find('input[type="submit"]').prop('disabled', true);
+        $form.find('button').prop('disabled', true);
 
-        alert('clicked');
+        // alert('clicked');
 
         $.ajax({
             url: '/upload',
@@ -528,10 +525,23 @@ document.addEventListener( "DOMContentLoaded", function( event ) {
             processData: false,  // !important
             contentType: false,
             cache: false,
-            success: function(data) {
-                $form.find('input[type="submit"]').prop('disabled', false);
+            success: function(d) {
+                $form.find('button').attr('disabled', false);
 
-                console.log(data);
+                console.log(d);
+                if (d.indexOf("{")===0) {
+                    d = JSON.parse(d);
+                    if (!window.data[d['Marker']]) {
+                        window.data[d['Marker']] = {};
+                    }
+                    if (!window.data[d['Marker']][d['Layer']]) {
+                        window.data[d['Marker']][d['Layer']] = [];
+                    }
+                    window.data[d['Marker']][d['Layer']].splice(0, 0, d);
+                    window.data[d['Marker']][d['Layer']].join();
+                }
+
+
             }
         });
         // return false;
